@@ -113,13 +113,195 @@ Login failed.
 ### Web Page Enumeration - Port 80
 ![webpage](/assets/img/Posts/FriendZone/webpage.png)
 
-Basic webpage that will require further investigation/enumeration.
+Basic webpage that will warrant further investigation/enumeration. Of note, we notice a domain `freindzoneportal.red`.
 
 ### SMB - Port 445
 
 We can utilise `smbmap` to list the shares on the machine:
 
 ``` shell
+$ smbmap -H 10.10.10.123
+[+] Guest session       IP: 10.10.10.123:445    Name: 10.10.10.123                                      
+        Disk                                                    Permissions     Comment
+        ----                                                    -----------     -------
+        print$                                                  NO ACCESS       Printer Drivers
+        Files                                                   NO ACCESS       FriendZone Samba Server Files /etc/Files
+        general                                                 READ ONLY       FriendZone Samba Server Files
+        Development                                             READ, WRITE     FriendZone Samba Server Files
+        IPC$                                                    NO ACCESS       IPC Service (FriendZone server (Samba, Ubuntu))
+
+```
+
+Enumerate where the shares are on the filesystem of the machine with `nmap -p 445 --script=smb-enum-shares 10.10.10.123`:
+
+``` shell
+# nmap -p 445 --script=smb-enum-shares 10.10.10.123
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-10-26 16:10 AWST
+Nmap scan report for 10.10.10.123
+Host is up (0.26s latency).
+
+PORT    STATE SERVICE
+445/tcp open  microsoft-ds
+
+Host script results:
+| smb-enum-shares: 
+|   account_used: guest
+|   \\10.10.10.123\Development: 
+|     Type: STYPE_DISKTREE
+|     Comment: FriendZone Samba Server Files
+|     Users: 0
+|     Max Users: <unlimited>
+|     Path: C:\etc\Development
+|     Anonymous access: READ/WRITE
+|     Current user access: READ/WRITE
+|   \\10.10.10.123\Files: 
+|     Type: STYPE_DISKTREE
+|     Comment: FriendZone Samba Server Files /etc/Files
+|     Users: 0
+|     Max Users: <unlimited>
+|     Path: C:\etc\hole
+|     Anonymous access: <none>
+|     Current user access: <none>
+|   \\10.10.10.123\IPC$: 
+|     Type: STYPE_IPC_HIDDEN
+|     Comment: IPC Service (FriendZone server (Samba, Ubuntu))
+|     Users: 1
+|     Max Users: <unlimited>
+|     Path: C:\tmp
+|     Anonymous access: READ/WRITE
+|     Current user access: READ/WRITE
+|   \\10.10.10.123\general: 
+|     Type: STYPE_DISKTREE
+|     Comment: FriendZone Samba Server Files
+|     Users: 0
+|     Max Users: <unlimited>
+|     Path: C:\etc\general
+|     Anonymous access: READ/WRITE
+|     Current user access: READ/WRITE
+|   \\10.10.10.123\print$: 
+|     Type: STYPE_DISKTREE
+|     Comment: Printer Drivers
+|     Users: 0
+|     Max Users: <unlimited>
+|     Path: C:\var\lib\samba\printers
+|     Anonymous access: <none>
+|_    Current user access: <none>
+
+Nmap done: 1 IP address (1 host up) scanned in 64.11 seconds
+
 
 
 ```
+
+Now we can list files from the shares with `-r`
+
+``` shell
+
+# smbmap -H 10.10.10.123 -r
+[+] Guest session       IP: 10.10.10.123:445    Name: 10.10.10.123                                      
+        Disk                                                    Permissions     Comment
+        ----                                                    -----------     -------
+        print$                                                  NO ACCESS       Printer Drivers
+        Files                                                   NO ACCESS       FriendZone Samba Server Files /etc/Files
+        general                                                 READ ONLY       FriendZone Samba Server Files
+        .\general\*
+        dr--r--r--                0 Thu Jan 17 04:10:51 2019    .
+        dr--r--r--                0 Thu Jan 24 05:51:02 2019    ..
+        fr--r--r--               57 Wed Oct 10 07:52:42 2018    creds.txt
+        Development                                             READ, WRITE     FriendZone Samba Server Files
+        .\Development\*
+        dr--r--r--                0 Mon Oct 26 16:22:37 2020    .
+        dr--r--r--                0 Thu Jan 24 05:51:02 2019    ..
+        IPC$                                                    NO ACCESS       IPC Service (FriendZone server (Samba, Ubuntu))
+
+
+
+```
+
+The clear stand-out file is `creds.txt`, lets take a look:
+
+``` shell
+
+#smbclient -U "" //10.10.10.123/general
+Enter WORKGROUP\'s password: 
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                   D        0  Thu Jan 17 04:10:51 2019
+  ..                                  D        0  Thu Jan 24 05:51:02 2019
+  creds.txt                           N       57  Wed Oct 10 07:52:42 2018
+
+                9221460 blocks of size 1024. 6460324 blocks available
+smb: \> get creds.txt
+getting file \creds.txt of size 57 as creds.txt (0.1 KiloBytes/sec) (average 0.1 KiloBytes/sec)
+smb: \> exit
+b3nny@kali:~$ cat creds.txt 
+creds for the admin THING:
+
+admin:WORKWORKHhallelujah@#
+
+
+```
+
+We now have the credentials `admin` / `WORKWORKHhallelujah@#`
+
+### Web Page Enumeration - Continued
+
+
+Attempt zone transfer on the domain in the email address seen earlier
+
+``` shell
+$ host -t axfr friendzone.red 10.10.10.123
+Trying "friendzone.red"
+Using domain server:
+Name: 10.10.10.123
+Address: 10.10.10.123#53
+Aliases: 
+
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 16864
+;; flags: qr aa; QUERY: 1, ANSWER: 8, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;friendzone.red.                        IN      AXFR
+
+;; ANSWER SECTION:
+friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604800 86400 2419200 604800
+friendzone.red.         604800  IN      AAAA    ::1
+friendzone.red.         604800  IN      NS      localhost.
+friendzone.red.         604800  IN      A       127.0.0.1
+administrator1.friendzone.red. 604800 IN A      127.0.0.1
+hr.friendzone.red.      604800  IN      A       127.0.0.1
+uploads.friendzone.red. 604800  IN      A       127.0.0.1
+friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604800 86400 2419200 604800
+
+Received 250 bytes from 10.10.10.123#53 in 259 ms
+```
+
+Another way to transfer
+
+``` shell
+# dig axfr friendzone.red @10.10.10.123; <<>> DiG 9.11.5-P4-5.1-Debian <<>> axfr friendzone.red @10.10.10.123
+;; global options: +cmd
+friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604800 86400 2419200 604800
+friendzone.red.         604800  IN      AAAA    ::1
+friendzone.red.         604800  IN      NS      localhost.
+friendzone.red.         604800  IN      A       127.0.0.1
+administrator1.friendzone.red. 604800 IN A      127.0.0.1
+hr.friendzone.red.      604800  IN      A       127.0.0.1
+uploads.friendzone.red. 604800  IN      A       127.0.0.1
+friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604800 86400 2419200 604800
+
+
+```
+
+Add domains to `/etc/hosts` file:
+``` shell
+10.10.10.123    friendzone.htb  
+10.10.10.123    friendzone.red administrator1.friendzone.red \ hr.friendzone.red uploads.friendzone.red
+
+```
+
+Browsing to `https://administrator1.friendzone.red/` and utilising the credentials from SMB we have success
+
+![website2](/assets/img/Posts/FriendZone/webpage2.png)
+
+
