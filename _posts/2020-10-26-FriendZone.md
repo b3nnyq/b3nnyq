@@ -2,11 +2,11 @@
 title: "HackTheBox — FriendZone Writeup"
 date: 2020-10-26 15:28:00 +0530
 categories: [HackTheBox,Windows Machines]
-tags: [NFS, winpeas, umbraco, john, TeamViewer, crackmapexec, Nishang, usosvc, decrypt, AES, remote, SHA1]
+tags: [Web, SMB]
 image: /assets/img/Posts/FriendZone.png
 ---
 
-> FriendZone
+> FriendZone executive summary goes here
 
 ## Task Overview
 
@@ -111,7 +111,7 @@ Login failed.
 `Exploit--db.com` has no identified exploit post version 3.0 of vsftpd.
 
 ### Web Page Enumeration - Port 80
-![webpage](image: /assets/img/Posts/FriendZone/webpage.png)
+![webpage](/assets/img/Posts/FriendZone/webpage.png)
 
 Basic webpage that will require further investigation/enumeration.
 
