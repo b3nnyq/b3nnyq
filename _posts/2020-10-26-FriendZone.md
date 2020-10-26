@@ -3,10 +3,10 @@ title: "HackTheBox — FriendZone Writeup"
 date: 2020-10-26 15:28:00 +0530
 categories: [HackTheBox,Windows Machines]
 tags: [NFS, winpeas, umbraco, john, TeamViewer, crackmapexec, Nishang, usosvc, decrypt, AES, remote, SHA1]
-image: /assets/img/Posts/Remote.png
+image: /assets/img/posts/FriendZone.png
 ---
 
-> Remote from HackTheBox is an Windows Machine running a vulnerable version of Umbraco CMS which can be exploited after we find the credentials from an exposed NFS share, After we get a reverse shell on the machine, we will pwn the box using three methods first we will abuse the service `UsoSvc` to get a shell as Administrator and later we will extract Administrator credentials from an outdated version of TeamViewer installed on the machine. Lastly, we will also exploit TeamViewer using Metasploit.
+> FriendZone
 
 ## Tasks
 
