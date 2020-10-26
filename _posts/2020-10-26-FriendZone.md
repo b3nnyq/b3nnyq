@@ -3,7 +3,7 @@ title: "HackTheBox — FriendZone Writeup"
 date: 2020-10-26 15:28:00 +0530
 categories: [HackTheBox,Windows Machines]
 tags: [NFS, winpeas, umbraco, john, TeamViewer, crackmapexec, Nishang, usosvc, decrypt, AES, remote, SHA1]
-image: /assets/img/posts/FriendZone.png
+image: /assets/img/Posts/FriendZone.png
 ---
 
 > FriendZone
