@@ -111,6 +111,15 @@ Login failed.
 `Exploit--db.com` has no identified exploit post version 3.0 of vsftpd.
 
 ### Web Page Enumeration - Port 80
-image: /assets/img/Posts/FriendZone/webpage.png
+![webpage](image: /assets/img/Posts/FriendZone/webpage.png)
 
-U
+Basic webpage that will require further investigation/enumeration.
+
+### SMB - Port 445
+
+We can utilise `smbmap` to list the shares on the machine:
+
+``` shell
+
+
+```
