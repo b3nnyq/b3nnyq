@@ -19,6 +19,8 @@ image: /assets/img/Posts/FriendZone.png
 Starting with an `masscan` and `nmap` to find the open ports and services on `10.10.10.123`:
 
 ```shell
+# sudo masscan -e tun0 -p0-65535 --max-rate 500 10.10.10.123
+
 Starting masscan 1.0.5 (http://bit.ly/14GZzcT) at 2020-10-26 07:42:57 GMT
  -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth
 Initiating SYN Stealth Scan
