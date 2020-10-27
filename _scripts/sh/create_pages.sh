@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/local/bin/bash
 #
 # Create HTML pages for Categories and Tags in posts.
 #
@@ -18,34 +18,31 @@ TYPE_TAG=1
 category_count=0
 tag_count=0
 
+
 _read_yaml() {
   local _endline="$(grep -n "\-\-\-" "$1" | cut -d: -f 1 | sed -n '2p')"
   head -"$_endline" "$1"
 }
 
+
 read_categories() {
   local _yaml="$(_read_yaml "$1")"
-  local _categories="$(echo "$_yaml" | yq r - "categories.*")"
-  local _category="$(echo "$_yaml" | yq r - "category")"
+  local _categories="$(echo "$_yaml" | grep "^categories:")"
+  local _category="$(echo "$_yaml" | grep "^category:")"
 
-  if [[ -n $_categories ]]; then
-    echo "$_categories"
-  elif [[ -n $_category ]]; then
-    echo "$_category"
+  if [[ ! -z "$_categories" ]]; then
+    echo "$_categories" | sed "s/categories: *//;s/\[//;s/\].*//;s/, */,/g;s/\"//g;s/'//g"
+  elif [[ ! -z "_category" ]]; then
+    echo "$_category" | sed "s/category: *//;s/\[//;s/\].*//;s/, */,/g;s/\"//g;s/'//g"
   fi
 }
+
 
 read_tags() {
   local _yaml="$(_read_yaml "$1")"
-  local _tags="$(echo "$_yaml" | yq r - "tags.*")"
-  local _tag="$(echo "$_yaml" | yq r - "tag")"
-
-  if [[ -n $_tags ]]; then
-    echo "$_tags"
-  elif [[ -n $_tag ]]; then
-    echo "$_tag"
-  fi
+  echo "$_yaml" | grep "^tags:" | sed "s/tags: *//;s/\[//;s/\].*//;s/, */,/g;s/\"//g;s/'//g"
 }
+
 
 init() {
 
@@ -64,29 +61,31 @@ init() {
   mkdir categories tags
 }
 
+
 create_category() {
-  if [[ -n $1 ]]; then
+  if [[ ! -z $1 ]]; then
     local _name=$1
     local _filepath="categories/$(echo "$_name" | sed 's/ /-/g' | awk '{print tolower($0)}').html"
 
-    if [[ ! -f $_filepath ]]; then
+    if [[ ! -f "$_filepath" ]]; then
       echo "---" > "$_filepath"
       echo "layout: category" >> "$_filepath"
       echo "title: $_name" >> "$_filepath"
       echo "category: $_name" >> "$_filepath"
       echo "---" >> "$_filepath"
 
-      ((category_count = category_count + 1))
+      ((category_count=category_count+1))
     fi
   fi
 }
 
-create_tag() {
-  if [[ -n $1 ]]; then
-    local _name=$1
-    local _filepath="tags/$(echo "$_name" | sed "s/ /-/g;s/'//g" | awk '{print tolower($0)}').html"
 
-    if [[ ! -f $_filepath ]]; then
+create_tag() {
+  if [[ ! -z $1 ]]; then
+    local _name=$1
+    local _filepath="tags/$( echo "$_name" | sed "s/ /-/g;s/'//g" | awk '{print tolower($0)}' ).html"
+
+    if [[ ! -f "$_filepath" ]]; then
 
       echo "---" > "$_filepath"
       echo "layout: tag" >> "$_filepath"
@@ -94,10 +93,11 @@ create_tag() {
       echo "tag: $_name" >> "$_filepath"
       echo "---" >> "$_filepath"
 
-      ((tag_count = tag_count + 1))
+      ((tag_count=tag_count+1))
     fi
   fi
 }
+
 
 #########################################
 # Create HTML pages for Categories/Tags.
@@ -106,40 +106,43 @@ create_tag() {
 #   $2 - type specified option
 #########################################
 create_pages() {
-  if [[ -n $1 ]]; then
+  if [[ ! -z $1 ]]; then
     # split string to array
     IFS_BAK=$IFS
-    IFS=$'\n'
+    IFS=','
     local _string=$1
 
     case $2 in
 
       $TYPE_CATEGORY)
-        for i in $_string; do
+        for i in ${_string#,}; do
           create_category "$i"
         done
         ;;
 
       $TYPE_TAG)
-        for i in $_string; do
+        for i in ${_string#,}; do
           create_tag "$i"
         done
         ;;
 
-      *) ;;
+      *)
+        ;;
 
-    esac
+      esac
 
-    IFS=$IFS_BAK
+      IFS=$IFS_BAK
   fi
 
 }
+
 
 main() {
 
   init
 
-  for _file in $(find "_posts" -type f \( -iname \*.md -o -iname \*.markdown \)); do
+  for _file in $(find "_posts" -type f \( -iname \*.md -o -iname \*.markdown \))
+  do
     local _categories=$(read_categories "$_file")
     local _tags=$(read_tags "$_file")
 
