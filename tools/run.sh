@@ -12,14 +12,16 @@
 
 set -eu
 
-WORK_DIR=$(dirname $(dirname $(realpath "$0")))
+WORK_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
 
-CONTAINER=.container
+CONTAINER="${WORK_DIR}/.container"
 SYNC_TOOL=_scripts/sh/sync_monitor.sh
 
-cmd="bundle exec jekyll s -l -o"
-realtime=false
+cmd="bundle exec jekyll s"
+JEKYLL_DOCKER_HOME="/srv/jekyll"
 
+realtime=false
+docker=false
 
 _help() {
   echo "Usage:"
@@ -33,33 +35,50 @@ _help() {
   echo "     -h, --help              Print the help information"
   echo "     -t, --trace             Show the full backtrace when an error occurs"
   echo "     -r, --realtime          Make the modified content updated in real time"
+  echo "         --docker            Run within docker"
 }
 
-
 _cleanup() {
-  if [[ -d _site || -d .jekyll-cache ]]; then
-    jekyll clean
-  fi
-
-  rm -rf "${WORK_DIR}/${CONTAINER}"
+  rm -rf "$CONTAINER"
   ps aux | grep fswatch | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
 }
 
+_setup_docker() {
+  # docker image `jekyll/jekyll` based on Alpine Linux
+  echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
+  ## CN Apline sources mirror
+  # sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
+  apk update
+  apk add yq
+}
 
 _init() {
+  cd "$WORK_DIR"
 
-  if [[ -d "${WORK_DIR}/${CONTAINER}" ]]; then
-    rm -rf "${WORK_DIR}/${CONTAINER}"
+  if [[ -f Gemfile.lock ]]; then
+    rm -f Gemfile.lock
   fi
 
-  temp="$(mktemp -d)"
-  cp -r "$WORK_DIR"/* "$temp"
-  cp -r "${WORK_DIR}/.git" "$temp"
-  mv "$temp" "${WORK_DIR}/${CONTAINER}"
+  if [[ -d $CONTAINER ]]; then
+    rm -rf "$CONTAINER"
+  fi
+
+  mkdir "$CONTAINER"
+  cp -r ./* "$CONTAINER"
+  cp -r ./.git "$CONTAINER"
+
+  if $docker; then
+    local _image_user=$(stat -c "%U" "$JEKYLL_DOCKER_HOME"/.)
+
+    if [[ $_image_user != $(whoami) ]]; then
+      # under Docker for Linux
+      chown -R "$(stat -c "%U:%G" "$JEKYLL_DOCKER_HOME"/.)" "$CONTAINER"
+    fi
+
+  fi
 
   trap _cleanup INT
 }
-
 
 _check_unset() {
   if [[ -z ${1:+unset} ]]; then
@@ -67,7 +86,6 @@ _check_unset() {
     exit 1
   fi
 }
-
 
 _check_command() {
   if [[ -z $(command -v "$1") ]]; then
@@ -77,43 +95,63 @@ _check_command() {
   fi
 }
 
-
-main() {
-  _init
-
-  cd "${WORK_DIR}/${CONTAINER}"
+_run() {
+  cd "$CONTAINER"
   bash _scripts/sh/create_pages.sh
   bash _scripts/sh/dump_lastmod.sh
 
-  if [[ $realtime = true ]]; then
-    fswatch -0 -e "\\$CONTAINER" -e "\.git" "$WORK_DIR" | xargs -0 -I {} bash "./${SYNC_TOOL}" {} "$WORK_DIR" . &
+  if $realtime; then
+
+    exclude_regex="\/\..*"
+
+    if [[ $OSTYPE == "darwin"* ]]; then
+      exclude_regex="/\..*" # darwin gcc treat regex '/' as character '/'
+    fi
+
+    fswatch -e "$exclude_regex" -0 -r \
+      --event Created --event Removed \
+      --event Updated --event Renamed \
+      --event MovedFrom --event MovedTo \
+      "$WORK_DIR" | xargs -0 -I {} bash "./${SYNC_TOOL}" {} "$WORK_DIR" . &
+  fi
+
+  if $docker; then
+    cmd+=" -H 0.0.0.0"
+  else
+    cmd+=" -l -o"
   fi
 
   echo "\$ $cmd"
   eval "$cmd"
 }
 
+main() {
+  if $docker; then
+    _setup_docker
+  fi
 
-while (( $# ))
-do
+  _init
+  _run
+}
+
+while (($#)); do
   opt="$1"
   case $opt in
-    -H|--host)
+    -H | --host)
       _check_unset "$2"
       cmd+=" -H $2"
       shift # past argument
       shift # past value
       ;;
-    -P|--port)
+    -P | --port)
       _check_unset "$2"
       cmd+=" -P $2"
       shift
       shift
       ;;
-    -b|--baseurl)
+    -b | --baseurl)
       _check_unset "$2"
-      if [[ "$2" == \/* ]]
-      then
+      if [[ $2 == \/* ]]; then
         cmd+=" -b $2"
       else
         _help
@@ -122,16 +160,20 @@ do
       shift
       shift
       ;;
-    -t|--trace)
+    -t | --trace)
       cmd+=" -t"
       shift
       ;;
-    -r|--realtime)
+    -r | --realtime)
       _check_command fswatch "http://emcrisostomo.github.io/fswatch/"
       realtime=true
       shift
       ;;
-    -h|--help)
+    --docker)
+      docker=true
+      shift
+      ;;
+    -h | --help)
       _help
       exit 0
       ;;
@@ -142,6 +184,5 @@ do
       ;;
   esac
 done
-
 
 main
