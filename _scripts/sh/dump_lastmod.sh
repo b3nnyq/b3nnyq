@@ -2,7 +2,7 @@
 #
 # Find out the posts that have been modified and record
 # its lastmod information to file '_data/updates.yml'
-#
+# 
 # Usage:
 #     Call from the '_posts' sibling directory.
 #
@@ -16,6 +16,7 @@ set -eu
 POST_DIR=_posts
 OUTPUT_DIR=_data
 OUTPUT_FILE=updates.yml
+
 
 _init() {
 
@@ -32,6 +33,7 @@ _init() {
   fi
 }
 
+
 _has_changed() {
   local _log_count="$(git log --pretty=%ad "$1" | wc -l | sed 's/ *//')"
   _log_count=$((_log_count + 0))
@@ -42,6 +44,7 @@ _has_changed() {
 
   return 1 # false
 }
+
 
 ###################################
 # Storage the posts' lastmod.
@@ -64,18 +67,20 @@ _dump() {
   echo "  lastmod: '$_lasmod'" >> "$OUTPUT_DIR/$OUTPUT_FILE"
 }
 
+
 main() {
 
   _init
 
   local _count=0
 
-  for _file in $(find ${POST_DIR} -type f \( -iname \*.md -o -iname \*.markdown \)); do
-    _filename="$(basename "$_file" | sed 's/-\-\+/-/;s/[[:digit:]]\([[:digit:]]*-\)//g;s/\..*//')" # remove date and extension
+  for _file in $(find ${POST_DIR} -type f \( -iname \*.md -o -iname \*.markdown \))
+  do
+    _filename="$(basename "$_file" | sed 's/-\-\+/-/;s/[[:digit:]]\([[:digit:]]*-\)//g;s/\..*//' )" # remove date and extension
 
     if _has_changed "$_file"; then
       _dump "$_filename" "$_file"
-      ((_count = _count + 1))
+      ((_count=_count+1))
     fi
 
   done
@@ -84,5 +89,6 @@ main() {
     echo "[INFO] Success to update lastmod for $_count post(s)."
   fi
 }
+
 
 main
