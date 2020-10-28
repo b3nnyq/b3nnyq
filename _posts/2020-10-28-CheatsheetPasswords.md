@@ -167,7 +167,7 @@ Candidates.#1....: 123456 -> lovers1
 Started: Wed Oct 28 07:55:47 2020
 Stopped: Wed Oct 28 07:55:49 2020
 ```
-And its cracked, piped to `test.out`
+And its cracked, piped to `test.out`:
 
 ``` shell
 
