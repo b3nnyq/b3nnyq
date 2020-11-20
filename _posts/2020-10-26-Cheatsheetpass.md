@@ -23,7 +23,7 @@ First we generate an md5 hash in the file `hashes` to be passed:
 
 
 ## Crack with Hashcat
-Lets utilise the `-m 0` flag for an md5 and the `rockyou.txt` wordlist:
+Let's utilise the `-m 0` flag for an md5 and the `rockyou.txt` wordlist:
 
 
 ``` shell
