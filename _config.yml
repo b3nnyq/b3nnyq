@@ -10,7 +10,7 @@
 
 title: B3nnyQ InfoSec                          # the main title
 
-tagline: CTF Player | Pentester | Digital Forensics | InfoSec Enthusiast.  # it will display as the sub-title
+tagline: CTF Player | Digital Forensics | InfoSec Enthusiast.  # it will display as the sub-title
 
 description: >-                        # used by seo meta and the atom feed
  Pursuit of knowledge.
@@ -33,7 +33,7 @@ social:
   email: quintonbj@gmail.com             # change to your email address
   links:
     # The first element serves as the copyright owner's link
-    - https://twitter.com/username      # change to your twitter homepage
+    - https://twitter.com/b3nnyq      # change to your twitter homepage
     - https://github.com/b3nnyq       # change to your github homepage
     # Uncomment below to add more social links
     # - https://www.facebook.com/username
