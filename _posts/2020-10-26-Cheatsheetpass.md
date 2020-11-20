@@ -6,7 +6,7 @@ tags: [john, hydra, hashes, md5, hashcat]
 image: /assets/img/Posts/password_strength.gif
 ---
 
-> Cheatsheet for cracking password hashes utilising `john` and `hashcat`.
+> Cheatsheet for cracking password hashes utilising `john` and `hashcat`. Test.
 
 ## Generate MD5 Hash
 
