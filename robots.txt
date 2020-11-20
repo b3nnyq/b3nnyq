@@ -1,0 +1,5 @@
+User-agent: *
+
+Disallow: /norobots/
+
+Sitemap: https://b3nnyq.github.io/b3nnyq//sitemap.xml
