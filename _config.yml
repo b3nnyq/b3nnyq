@@ -26,11 +26,11 @@ github:
   username: b3nnyq             # change to your github username
 
 twitter:
-  username: twitter_username            # change to your twitter username
+  username: b3nnyq            # change to your twitter username
 
 social:
-  name: BenQ                  # it will shows as the copyright owner in Footer
-  email: quintonbj@gmail.com             # change to your email address
+  name: B3nnyQ                 # it will shows as the copyright owner in Footer
+  email: b@gmail.com             # change to your email address
   links:
     # The first element serves as the copyright owner's link
     - https://twitter.com/b3nnyq      # change to your twitter homepage
